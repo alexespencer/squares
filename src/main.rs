@@ -1,12 +1,18 @@
 extern crate nannou;
+use std::ops::Mul;
+
 use nannou::{
     prelude::*,
-    rand::{Rng, RngCore, SeedableRng, rngs::StdRng},
+    rand::{
+        Rng, RngCore, SeedableRng,
+        distributions::uniform::{SampleRange, SampleUniform},
+        rngs::StdRng,
+    },
 };
 use nannou_egui::{Egui, egui};
 
 fn main() {
-    nannou::app(model).update(update).simple_window(view).run();
+    nannou::app(model).update(update).run();
 }
 
 struct Settings {
@@ -76,6 +82,18 @@ fn update(_app: &App, model: &mut Model, update: Update) {
     });
 }
 
+fn scaled_random_range<T, R>(rng: &mut impl Rng, scale: T, range: R) -> T
+where
+    T: SampleUniform + Zero + Mul<Output = T>,
+    R: SampleRange<T>,
+{
+    if !scale.is_zero() && !range.is_empty() {
+        scale * rng.gen_range(range)
+    } else {
+        T::zero()
+    }
+}
+
 fn draw_row(draw: &Draw, area: &Rect, settings: &Settings, noise_limit: f32, rng: &mut impl Rng) {
     // Calculate the number of cubes that can fit in the area
     let num_cubes = ((area.w() - settings.border_size * 2.0) / settings.cube_size).floor() as i32;
@@ -83,31 +101,23 @@ fn draw_row(draw: &Draw, area: &Rect, settings: &Settings, noise_limit: f32, rng
     for i in 0..num_cubes {
         // Determine angle to rotate. Use model's angle_noise param * noise_limit
         // to create a range of angles.
-        let random_angle = if noise_limit > 0.0 {
-            rng.gen_range(
-                (-settings.angle_noise * noise_limit)..(settings.angle_noise * noise_limit),
-            )
-        } else {
-            0.0
-        };
+        let random_angle = scaled_random_range(
+            rng,
+            noise_limit,
+            -settings.angle_noise..settings.angle_noise,
+        );
 
         // Shift the square up/down/left/right randomly
-        let x_shift = if noise_limit > 0.0 {
-            rng.gen_range(
-                (-settings.translation_noise * noise_limit)
-                    ..(settings.translation_noise * noise_limit),
-            )
-        } else {
-            0.0
-        };
-        let y_shift = if noise_limit > 0.0 {
-            rng.gen_range(
-                (-settings.translation_noise * noise_limit)
-                    ..(settings.translation_noise * noise_limit),
-            )
-        } else {
-            0.0
-        };
+        let x_shift = scaled_random_range(
+            rng,
+            noise_limit,
+            -settings.translation_noise..settings.translation_noise,
+        );
+        let y_shift = scaled_random_range(
+            rng,
+            noise_limit,
+            -settings.translation_noise..settings.translation_noise,
+        );
 
         // Create rect
         let rect = Rect::from_w_h(settings.cube_size, settings.cube_size)
@@ -121,7 +131,7 @@ fn draw_row(draw: &Draw, area: &Rect, settings: &Settings, noise_limit: f32, rng
             .wh(rect.wh())
             .xy(rect.xy())
             .stroke(BLACK)
-            .stroke_weight(1.0)
+            .stroke_weight(1.5)
             .rotate(random_angle);
     }
 }
