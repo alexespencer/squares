@@ -16,9 +16,13 @@ fn main() {
 }
 
 struct Settings {
+    /// How large the cubes are.
     cube_size: f32,
+    /// How large the border is, padded top/bottom/left/right of the window.
     border_size: f32,
+    /// Scaling factor for rotation.
     angle_noise: f32,
+    /// Scaling factor for translation.
     translation_noise: f32,
 }
 
@@ -162,8 +166,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
         );
     }
 
-    // Write to the window frame.
+    // Write to the window frame and draw the egui menu.
     draw.to_frame(app, &frame).unwrap();
-
     model.egui.draw_to_frame(&frame).unwrap();
 }
